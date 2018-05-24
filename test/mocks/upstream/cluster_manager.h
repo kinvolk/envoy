@@ -37,6 +37,10 @@ public:
   MOCK_METHOD(bool, addOrUpdateCluster,
               (const envoy::config::cluster::v3::Cluster& cluster,
                const std::string& version_info));
+  MOCK_METHOD((std::pair<ClusterResponseCode, DynamicClusterHandlerPtr>),
+              addOrUpdateClusterCrossThread,
+              (const envoy::config::cluster::v3::Cluster& cluster, const std::string& version_info,
+               PostClusterCreationCb post_cluster_cb));
   MOCK_METHOD(void, setPrimaryClustersInitializedCb, (PrimaryClustersReadyCallback));
   MOCK_METHOD(void, setInitializedCb, (InitializationCompleteCallback));
   MOCK_METHOD(void, initializeSecondaryClusters,

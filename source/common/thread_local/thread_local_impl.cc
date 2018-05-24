@@ -177,6 +177,8 @@ void InstanceImpl::runOnAllThreads(Event::PostCb cb, Event::PostCb all_threads_c
   }
 }
 
+bool InstanceImpl::isMainThread() { return Thread::MainThread::isMainThread(); }
+
 void InstanceImpl::setThreadLocal(uint32_t index, ThreadLocalObjectSharedPtr object) {
   if (thread_local_data_.data_.size() <= index) {
     thread_local_data_.data_.resize(index + 1);

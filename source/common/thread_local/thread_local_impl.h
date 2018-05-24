@@ -46,6 +46,7 @@ private:
     void runOnAllThreads(const UpdateCb& cb) override;
     void runOnAllThreads(const UpdateCb& cb, const Event::PostCb& complete_cb) override;
     bool currentThreadRegistered() override;
+    bool isMainThread() override { return parent_.isMainThread(); }
     void set(InitializeCb cb) override;
 
     InstanceImpl& parent_;
@@ -73,6 +74,7 @@ private:
   void removeSlot(uint32_t slot);
   void runOnAllThreads(Event::PostCb cb);
   void runOnAllThreads(Event::PostCb cb, Event::PostCb main_callback);
+  bool isMainThread();
   static void setThreadLocal(uint32_t index, ThreadLocalObjectSharedPtr object);
 
   static thread_local ThreadLocalData thread_local_data_;

@@ -32,6 +32,7 @@ public:
     cb();
     main_callback();
   }
+  bool isMainThread() { return true; }
 
   void shutdownThread_() {
     shutdown_ = true;
@@ -81,6 +82,7 @@ public:
         parent_.data_[index_] = cb(parent_.dispatcher_);
       }
     }
+    bool isMainThread() override { return true; }
 
     MockInstance& parent_;
     const uint32_t index_;

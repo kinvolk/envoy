@@ -11,6 +11,7 @@
 #include "common/config/datasource.h"
 #include "common/crypto/utility.h"
 #include "common/http/message_impl.h"
+#include "common/protobuf/message_validator_impl.h"
 
 #include "absl/strings/escaping.h"
 
@@ -189,10 +190,10 @@ StreamHandleWrapper::StreamHandleWrapper(Filters::Common::Lua::Coroutine& corout
 Http::FilterHeadersStatus StreamHandleWrapper::start(int function_ref) {
   // We are on the top of the stack.
   coroutine_.start(function_ref, 1, yield_callback_);
-  Http::FilterHeadersStatus status =
-      (state_ == State::WaitForBody || state_ == State::HttpCall || state_ == State::Responded)
-          ? Http::FilterHeadersStatus::StopIteration
-          : Http::FilterHeadersStatus::Continue;
+  Http::FilterHeadersStatus status = (state_ == State::WaitForBody || state_ == State::HttpCall ||
+                                      state_ == State::Responded || state_ == State::DynamicCluster)
+                                         ? Http::FilterHeadersStatus::StopIteration
+                                         : Http::FilterHeadersStatus::Continue;
 
   if (status == Http::FilterHeadersStatus::Continue) {
     headers_continued_ = true;
@@ -226,6 +227,9 @@ Http::FilterDataStatus StreamHandleWrapper::onData(Buffer::Instance& data, bool 
   if (state_ == State::HttpCall || state_ == State::WaitForBody) {
     ENVOY_LOG(trace, "buffering body");
     return Http::FilterDataStatus::StopIterationAndBuffer;
+  } else if (state_ == State::DynamicCluster) {
+    ENVOY_LOG(trace, "not buffering body");
+    return Http::FilterDataStatus::StopIterationAndBuffer;
   } else if (state_ == State::Responded) {
     return Http::FilterDataStatus::StopIterationNoBuffer;
   } else {
@@ -255,9 +259,10 @@ Http::FilterTrailersStatus StreamHandleWrapper::onTrailers(Http::HeaderMap& trai
     coroutine_.resume(luaTrailers(coroutine_.luaState()), yield_callback_);
   }
 
-  Http::FilterTrailersStatus status = (state_ == State::HttpCall || state_ == State::Responded)
-                                          ? Http::FilterTrailersStatus::StopIteration
-                                          : Http::FilterTrailersStatus::Continue;
+  Http::FilterTrailersStatus status =
+      (state_ == State::HttpCall || state_ == State::Responded || state_ == State::DynamicCluster)
+          ? Http::FilterTrailersStatus::StopIteration
+          : Http::FilterTrailersStatus::Continue;
 
   if (status == Http::FilterTrailersStatus::Continue) {
     headers_continued_ = true;
@@ -327,6 +332,41 @@ int StreamHandleWrapper::doSynchronousHttpCall(lua_State* state, Tracing::Span& 
 int StreamHandleWrapper::doAsynchronousHttpCall(lua_State* state, Tracing::Span& span) {
   makeHttpCall(state, filter_, span, noopCallbacks());
   return 0;
+}
+
+int StreamHandleWrapper::luaAddorUpdateCluster(lua_State* state) {
+  ASSERT(state_ == State::Running);
+  const std::string cluster_template_yaml = luaL_checkstring(state, 2);
+  envoy::config::cluster::v3::Cluster cluster;
+  MessageUtil::loadFromYaml(cluster_template_yaml, cluster,
+                            Envoy::ProtobufMessage::getNullValidationVisitor());
+  cluster_handler_ =
+      filter_.clusterManager()
+          .addOrUpdateClusterCrossThread(cluster, "",
+                                         [this]() -> void {
+                                           if (state_ == State::DynamicCluster) {
+                                             state_ = State::Running;
+                                             markLive();
+                                             try {
+                                               coroutine_.resume(0, yield_callback_);
+                                               markDead();
+                                             } catch (const Filters::Common::Lua::LuaException& e) {
+                                               filter_.scriptError(e);
+                                             }
+
+                                             if (state_ == State::Running) {
+                                               headers_continued_ = true;
+                                               callbacks_.continueIteration();
+                                             }
+                                           }
+                                         })
+          .second;
+  if (cluster_handler_) {
+    state_ = State::DynamicCluster;
+    return lua_yield(state, 0);
+  } else {
+    return 1;
+  }
 }
 
 void StreamHandleWrapper::onSuccess(const Http::AsyncClient::Request&,

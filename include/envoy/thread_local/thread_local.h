@@ -49,6 +49,11 @@ public:
   }
 
   /**
+   * Returns true if the thread is main dispatcher otherwise false.
+   */
+  virtual bool isMainThread() PURE;
+
+  /**
    * Set thread local data on all threads previously registered via registerThread().
    * @param initializeCb supplies the functor that will be called *on each thread*. The functor
    *                     returns the thread local object which is then stored. The storage is via
@@ -176,6 +181,11 @@ public:
   void runOnAllThreads(const UpdateCb& cb, const Event::PostCb& complete_cb) {
     slot_->runOnAllThreads(makeSlotUpdateCb(cb), complete_cb);
   }
+
+  /**
+   * Returns true if the thread is main dispatcher otherwise false.
+   */
+  bool isMainThread() { return slot_->isMainThread(); }
 
 private:
   static OptRef<T> getOpt(ThreadLocalObjectSharedPtr obj) {

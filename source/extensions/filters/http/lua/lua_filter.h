@@ -131,6 +131,8 @@ public:
     WaitForTrailers,
     // Lua script is blocked waiting for the result of an HTTP call.
     HttpCall,
+    // Lua script is blocked waiting for the result of Dynamic Cluster creation call.
+    DynamicCluster,
     // Lua script has done a direct response.
     Responded
   };
@@ -146,6 +148,10 @@ public:
     if (http_request_) {
       http_request_->cancel();
       http_request_ = nullptr;
+    }
+    if (cluster_handler_) {
+      cluster_handler_->cancel();
+      cluster_handler_ = nullptr;
     }
   }
 
@@ -167,7 +173,8 @@ public:
             {"connection", static_luaConnection},
             {"importPublicKey", static_luaImportPublicKey},
             {"verifySignature", static_luaVerifySignature},
-            {"base64Escape", static_luaBase64Escape}};
+            {"base64Escape", static_luaBase64Escape},
+            {"addOrUpdateCluster", static_luaAddorUpdateCluster}};
   }
 
 private:
@@ -232,6 +239,15 @@ private:
    * @return a handle to the network connection.
    */
   DECLARE_LUA_FUNCTION(StreamHandleWrapper, luaConnection);
+
+  /**
+   * @return a handle to create a cluster on the request path.
+   */
+  /**
+   * Create a cluster on the request path. This call yields the script till cluster is created.
+   * @param 1 (string): Yaml representation of Cluster definition as per v3 APIs.
+   */
+  DECLARE_LUA_FUNCTION(StreamHandleWrapper, luaAddorUpdateCluster);
 
   /**
    * Log a message to the Envoy log.
@@ -317,6 +333,7 @@ private:
   State state_{State::Running};
   std::function<void()> yield_callback_;
   Http::AsyncClient::Request* http_request_{};
+  Upstream::DynamicClusterHandlerPtr cluster_handler_;
 
   // The inserted crypto object pointers will not be removed from this map.
   absl::flat_hash_map<std::string, Envoy::Common::Crypto::CryptoObjectPtr> public_key_storage_;
