@@ -59,6 +59,7 @@ function bazel_binary_build() {
   BINARY_TYPE="$1"
   if [[ "${BINARY_TYPE}" == "release" ]]; then
     COMPILE_TYPE="opt"
+    CONFIG_ARGS="--copt -g"
   elif [[ "${BINARY_TYPE}" == "debug" ]]; then
     COMPILE_TYPE="dbg"
   elif [[ "${BINARY_TYPE}" == "sizeopt" ]]; then
