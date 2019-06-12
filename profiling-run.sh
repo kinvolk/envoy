@@ -41,7 +41,7 @@ single_profiling_run () {
   kill $SPID
   ) &
   rm ./perf.data* || true
-  perf record --call-graph dwarf "$HOME/envoy-build/envoy/source/exe/envoy" -c envoy-conf.yaml || true
+  perf record -F 2000 --call-graph dwarf "$HOME/envoy-build/envoy/source/exe/envoy" -c envoy-conf.yaml || true
   perf script | inferno-collapse-perf > "envoy_out_$NAME.folded"  # separate step to be able to rerun flamegraph with another width
   inferno-flamegraph --width 4000 "envoy_out_$NAME.folded" > "envoy_flamegraph_$NAME.svg"  # or: flamegraph.pl instead of inferno-flamegraph
 }
