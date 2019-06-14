@@ -40,12 +40,13 @@ single_profiling_run () {
   while pgrep wss.pl; do
     sleep 1
   done
-  killall envoy
+  # quit envoy
+  curl --data-ascii '' http://127.0.0.1:9901/quitquitquit
   # kill server
   kill $SPID
   ) &
   rm ./perf.data* || true
-  perf record -F 2000 --call-graph dwarf "$HOME/envoy-build/envoy/source/exe/envoy" -c envoy-conf.yaml || true
+  perf record -F 2000 --call-graph dwarf "$HOME/envoy-build/envoy/source/exe/envoy" -c envoy-conf.yaml
   perf script | inferno-collapse-perf > "envoy_out_$NAME.folded"  # separate step to be able to rerun flamegraph with another width
   inferno-flamegraph --width 4000 "envoy_out_$NAME.folded" > "envoy_flamegraph_$NAME.svg"  # or: flamegraph.pl instead of inferno-flamegraph
 }
