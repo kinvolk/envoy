@@ -5,9 +5,11 @@ set -o pipefail
 PROFDIR=$(dirname "$0")
 
 cd "$PROFDIR"
+which inferno-flamegraph || cargo install inferno
 which actix-web-server || cargo install --path actix-web-server
-which actix-web-server || ( echo "Please add ~/.cargo/bin to your PATH" ; exit 1 )
+which inferno-flamegraph actix-web-server || ( echo "Please add ~/.cargo/bin to your PATH" ; exit 1 )
 which wrk || ( echo "wrk not found: Compile the wrk binary from https://github.com/kinvolk/wrk2/ and move it to your PATH" ; exit 1 )
+which pprof || ( echo "pprof not found: Please install the distribution package (pprof or gperftools)" ; exit 1 )
 ls libmemory_profiler.so memory-profiler-cli || ( curl -L -O https://github.com/nokia/memory-profiler/releases/download/0.3.0/memory-profiler-x86_64-unknown-linux-gnu.tgz ; tar xf memory-profiler-x86_64-unknown-linux-gnu.tgz ; rm memory-profiler-x86_64-unknown-linux-gnu.tgz )
 
 trap '{ killall iperf actix-web-server >& /dev/null; }' EXIT
@@ -33,15 +35,18 @@ single_profiling_run () {
   fi
   # quit envoy
   curl --data-ascii '' http://127.0.0.1:9901/quitquitquit
-  mkdir /tmp/$NAME
-  mv /tmp/envoy.prof* /tmp/$NAME
   # kill server
   kill $SPID
   ) &
   "$HOME/envoy-build/envoy/source/exe/envoy" -c envoy-conf.yaml
+  rm -r /tmp/$NAME || true
+  mkdir /tmp/$NAME
+  mv /tmp/envoy.prof* /tmp/$NAME
+  pprof --collapsed "$HOME/envoy-build/envoy/source/exe/envoy" /tmp/$NAME/envoy.prof.00* > "envoy_heap_$NAME.folded"
+  inferno-flamegraph --title "Memory Flame Graph" "envoy_heap_$NAME.folded" > "envoy_heap_$NAME.svg"
 }
 
 MODE=TCP NAME=tcpinbound PROXY_PORT=4144 SERVER_PORT=8081 single_profiling_run
 MODE=HTTP NAME=inbound PROXY_PORT=4143 single_profiling_run
-ls /tmp/*/envoy*
-echo "Run pprof to analyze the above files."
+echo "Run pprof '"$HOME/envoy-build/envoy/source/exe/envoy"' '/tmp/inbound/envoy.prof.00*' to analyze the above files (or tcpinbound), or view the memory flamegraphs in a browser:"
+ls envoy_heap*svg
