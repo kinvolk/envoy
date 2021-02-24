@@ -279,6 +279,20 @@ elif [[ "$CI_TARGET" == "bazel.msan" ]]; then
   echo "Building and testing envoy tests ${TEST_TARGETS[*]}"
   bazel_with_collection test "${BAZEL_BUILD_OPTIONS[@]}" "${TEST_TARGETS[@]}"
   exit 0
+elif [[ "$CI_TARGET" == "bazel.dev.server_only" ]]; then
+  setup_clang_toolchain
+  echo "bazel fastbuild build without tests..."
+  echo "Building..."
+  bazel_binary_build fastbuild
+  exit 0
+elif [[ "$CI_TARGET" == "bazel.dev.tests_only" ]]; then
+  setup_clang_toolchain
+  echo "Building and testing ${TEST_TARGETS[*]}"
+  bazel_with_collection test "${BAZEL_BUILD_OPTIONS[@]}" -c fastbuild "${TEST_TARGETS[@]}"
+  # TODO(foreseeable): consolidate this and the API tool tests in a dedicated target.
+  bazel_with_collection //tools/envoy_headersplit:headersplit_test --spawn_strategy=local
+  bazel_with_collection //tools/envoy_headersplit:replace_includes_test --spawn_strategy=local
+  exit 0
 elif [[ "$CI_TARGET" == "bazel.dev" ]]; then
   setup_clang_toolchain
   # This doesn't go into CI but is available for developer convenience.
