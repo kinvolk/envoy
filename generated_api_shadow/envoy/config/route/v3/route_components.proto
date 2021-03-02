@@ -570,7 +570,7 @@ message CorsPolicy {
       [deprecated = true, (validate.rules).repeated = {items {string {max_bytes: 1024}}}];
 }
 
-// [#next-free-field: 37]
+// [#next-free-field: 38]
 message RouteAction {
   option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.route.RouteAction";
 
@@ -844,6 +844,8 @@ message RouteAction {
     // for additional documentation.
     WeightedCluster weighted_clusters = 3;
   }
+
+  bool cluster_on_demand = 37;
 
   // The HTTP status code to use when configured cluster is not found.
   // The default response code is 503 Service Unavailable.

@@ -559,7 +559,7 @@ message CorsPolicy {
   core.v4alpha.RuntimeFractionalPercent shadow_enabled = 10;
 }
 
-// [#next-free-field: 37]
+// [#next-free-field: 38]
 message RouteAction {
   option (udpa.annotations.versioning).previous_message_type = "envoy.config.route.v3.RouteAction";
 
@@ -834,6 +834,8 @@ message RouteAction {
     // for additional documentation.
     WeightedCluster weighted_clusters = 3;
   }
+
+  bool cluster_on_demand = 37;
 
   // The HTTP status code to use when configured cluster is not found.
   // The default response code is 503 Service Unavailable.

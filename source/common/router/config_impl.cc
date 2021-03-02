@@ -313,7 +313,8 @@ RouteEntryImplBase::RouteEntryImplBase(const VirtualHostImpl& vhost,
           route.route().has_host_rewrite_path_regex()
               ? route.route().host_rewrite_path_regex().substitution()
               : ""),
-      cluster_name_(route.route().cluster()), cluster_header_name_(route.route().cluster_header()),
+      cluster_name_(route.route().cluster()), on_demand_cluster_(route.route().cluster_on_demand()),
+      cluster_header_name_(route.route().cluster_header()),
       cluster_not_found_response_code_(ConfigUtility::parseClusterNotFoundResponseCode(
           route.route().cluster_not_found_response_code())),
       timeout_(PROTOBUF_GET_MS_OR_DEFAULT(route.route(), timeout, DEFAULT_ROUTE_TIMEOUT_MS)),
@@ -541,6 +542,8 @@ bool RouteEntryImplBase::matchRoute(const Http::RequestHeaderMap& headers,
 }
 
 const std::string& RouteEntryImplBase::clusterName() const { return cluster_name_; }
+
+bool RouteEntryImplBase::onDemandCluster() const { return on_demand_cluster_; }
 
 void RouteEntryImplBase::finalizeRequestHeaders(Http::RequestHeaderMap& headers,
                                                 const StreamInfo::StreamInfo& stream_info,
@@ -1184,7 +1187,7 @@ VirtualHostImpl::VirtualHostImpl(
       NOT_REACHED_GCOVR_EXCL_LINE;
     }
 
-    if (validation_clusters.has_value()) {
+    if (validation_clusters.has_value() && !routes_.back()->onDemandCluster()) {
       routes_.back()->validateClusters(*validation_clusters);
       for (const auto& shadow_policy : routes_.back()->shadowPolicies()) {
         ASSERT(!shadow_policy->cluster().empty());

@@ -475,6 +475,7 @@ public:
 
   // Router::RouteEntry
   const std::string& clusterName() const override;
+  bool onDemandCluster() const override;
   Http::Code clusterNotFoundResponseCode() const override {
     return cluster_not_found_response_code_;
   }
@@ -596,6 +597,7 @@ private:
     const std::string& routeName() const override { return parent_->routeName(); }
     // Router::RouteEntry
     const std::string& clusterName() const override { return cluster_name_; }
+    bool onDemandCluster() const override { return parent_->onDemandCluster(); }
     Http::Code clusterNotFoundResponseCode() const override {
       return parent_->clusterNotFoundResponseCode();
     }
@@ -786,6 +788,7 @@ private:
   const Regex::CompiledMatcherPtr host_rewrite_path_regex_;
   const std::string host_rewrite_path_regex_substitution_;
   const std::string cluster_name_;
+  const bool on_demand_cluster_;
   const Http::LowerCaseString cluster_header_name_;
   const Http::Code cluster_not_found_response_code_;
   const std::chrono::milliseconds timeout_;

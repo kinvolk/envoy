@@ -717,6 +717,11 @@ public:
   virtual const std::string& clusterName() const PURE;
 
   /**
+   * @return bool whether upstream cluster would need an on-demand loading.
+   */
+  virtual bool onDemandCluster() const PURE;
+
+  /**
    * Returns the HTTP status code to use when configured cluster is not found.
    * @return Http::Code to use when configured cluster is not found.
    */
