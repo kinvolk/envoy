@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package envoy.service.discovery.v3;
+
+import "envoy/config/core/v3/base.proto";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
+
+option java_package = "io.envoyproxy.envoy.service.discovery.v3";
+option java_outer_classname = "OnDemandProto";
+option java_multiple_files = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+message OnDemandDiscoveryRequest {
+  message TypedResource {
+    // Name of the resource that is being requested.
+    string name = 1;
+    // Type of the resource that is being requested, e.g.
+    // "type.googleapis.com/envoy.config.cluster.v3.Cluster".
+    string type_url = 2;
+  }
+
+  // The node making the request.
+  config.core.v3.Node node = 1;
+
+  // List of typed resources to fetch, e.g. list of cluster names or a route configuration names. If
+  // this is empty, no resources are returned. More or less resources than specified in this list
+  // may be returned. More can happen when the listed resources have dependencies on other on-demand
+  // resources. Less can happen if two names are aliases to the same resource.
+  repeated TypedResource resource_names = 2;
+}
+
+message OnDemandDiscoveryResponse {
+  repeated OnDemandResource resources;
+
+  // The control plane instance that sent the response.
+  config.core.v3.ControlPlane control_plane = 6;
+}
+
+message OnDemandResource {
+  // Cache control properties for the resource.
+  //
+  // [#not-implemented-hide:]
+  message CacheControl {
+    // If true, xDS proxies may not cache this resource.
+    //
+    // Note that this does not apply to clients other than xDS proxies, which must cache resources
+    // for their own use, regardless of the value of this field.
+    bool do_not_cache = 1;
+  }
+
+  // The resource's name, to distinguish it from others of the same type of resource.
+  string name = 1;
+
+  // The aliases are a list of other names that this resource can go by.
+  repeated string aliases = 2;
+
+  // The resource being tracked.
+  google.protobuf.Any resource = 3;
+
+  // Time-to-live value for the resource. For each resource, a timer is started. Upon expiration of
+  // the timer, the configuration for the resource will be removed. There is no way to reset the
+  // timer. If the resource is received with no TTL set, the resource is ignored.
+  google.protobuf.Duration ttl = 4;
+
+  // Cache control properties for the resource.
+  // [#not-implemented-hide:]
+  CacheControl cache_control = 5;
+}

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package envoy.service.cluster.v3;
+
+import "envoy/service/discovery/v3/discovery.proto";
+
+import "google/api/annotations.proto";
+
+import "envoy/annotations/resource.proto";
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
+
+option java_package = "io.envoyproxy.envoy.service.cluster.v3";
+option java_outer_classname = "OdcdsProto";
+option java_multiple_files = true;
+option java_generic_services = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+service OnDemandClusterDiscoveryService {
+  rpc FetchClusters(discovery.v3.OnDemandDiscoveryRequest) returns (discovery.v3.OnDemandDiscoveryResponse) {
+    option (google.api.http).post = "/v3/discovery:ondemandclusters";
+    option (google.api.http).body = "*";
+  }
+}
