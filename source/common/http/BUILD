@@ -346,17 +346,26 @@ envoy_cc_library(
 )
 
 envoy_cc_library(
+    name = "simple_rest_api_fetcher_lib",
+    srcs = ["simple_rest_api_fetcher.cc"],
+    hdrs = ["simple_rest_api_fetcher.h"],
+    deps = [
+        ":utility_lib",
+        "//include/envoy/http:async_client_interface",
+        "//include/envoy/upstream:cluster_manager_interface",
+        "//include/envoy/config:subscription_interface",
+        "//source/common/config:utility_lib",
+    ],
+)
+
+envoy_cc_library(
     name = "rest_api_fetcher_lib",
     srcs = ["rest_api_fetcher.cc"],
     hdrs = ["rest_api_fetcher.h"],
     deps = [
-        ":message_lib",
-        ":utility_lib",
+        ":simple_rest_api_fetcher_lib",
         "//include/envoy/event:dispatcher_interface",
         "//include/envoy/runtime:runtime_interface",
-        "//include/envoy/upstream:cluster_manager_interface",
-        "//source/common/common:enum_to_int",
-        "//source/common/config:utility_lib",
     ],
 )
 
